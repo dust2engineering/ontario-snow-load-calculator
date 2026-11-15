@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ontario Snow Load Calculator | Dust 2 Engineering Inc.</title>
+<style>
+:root{color-scheme:dark}
+body{background:#0e1116;color:#e6e9ee;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;margin:0;padding:24px;line-height:1.55}
+.wrap{max-width:860px;margin:0 auto}
+h1{font-size:1.55rem;line-height:1.25;margin:.2em 0 .1em}
+h2{font-size:1.15rem;margin-top:1.6em;color:#ffd479}
+.sub{color:#9fb0c3;margin:.2em 0 1.2em}
+.card{background:#161b22;border:1px solid #2b333f;border-radius:12px;padding:18px;margin:14px 0}
+label{display:block;margin:.7em 0 .25em;color:#c8d3e0;font-size:.95rem}
+input,select{width:100%;box-sizing:border-box;background:#0e1116;color:#e6e9ee;border:1px solid #39424f;border-radius:8px;padding:9px;font-size:1rem}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:640px){.row{grid-template-columns:1fr}}
+button{background:#f0a832;color:#14100a;border:0;border-radius:8px;padding:11px 18px;font-size:1rem;font-weight:600;cursor:pointer;margin-top:14px}
+button.ghost{background:#232a35;color:#e6e9ee}
+pre{background:#0a0d11;border:1px solid #2b333f;border-radius:10px;padding:14px;white-space:pre-wrap;word-break:break-word;font-size:.92rem}
+table{border-collapse:collapse;width:100%;font-size:.9rem}
+th,td{border:1px solid #2b333f;padding:6px 8px;text-align:left}
+th{background:#1b212b}
+.small{color:#9fb0c3;font-size:.88rem}
+a{color:#7cc4ff}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>Ontario Snow Load Calculator</h1>
+<p class="sub">Specified snow load by municipality — SB-1 Ss/Sr values with the OBC Part 9 formula and a simplified Part 4 uniform load.</p>
+<div class="card">
+<label>Municipality (SB-1 Table 2)</label>
+<select id="city"><option value="Toronto">Toronto (Ss 0.9, Sr 0.4)</option><option value="Mississauga">Mississauga (Ss 1.1, Sr 0.4)</option><option value="Markham">Markham (Ss 1.3, Sr 0.4)</option><option value="Oshawa">Oshawa (Ss 1.4, Sr 0.4)</option><option value="Newmarket">Newmarket (Ss 2.0, Sr 0.4)</option><option value="Bradford">Bradford (Ss 2.1, Sr 0.4)</option><option value="Caledon">Caledon (Ss 2.2, Sr 0.4)</option><option value="Orangeville">Orangeville (Ss 2.3, Sr 0.4)</option><option value="Orillia">Orillia (Ss 2.4, Sr 0.4)</option><option value="Barrie">Barrie (Ss 2.5, Sr 0.4)</option><option value="Gravenhurst">Gravenhurst (Ss 2.7, Sr 0.4)</option><option value="Parry Sound">Parry Sound (Ss 2.8, Sr 0.4)</option><option value="Huntsville">Huntsville (Ss 2.9, Sr 0.4)</option><option value="Bracebridge">Bracebridge (Ss 3.1, Sr 0.4)</option></select>
+<div class="row"><div><label>Entire roof width (m) — Part 9 factor</label><input id="width" type="number" value="6" step="0.1" min="0"></div>
+<div><label>Importance category (Part 4)</label><select id="imp"><option value="0.8">Low (Is 0.8)</option><option value="1.0" selected>Normal (Is 1.0)</option><option value="1.15">High (Is 1.15)</option><option value="1.25">Post-disaster (Is 1.25)</option></select></div></div>
+<button onclick="go()">Calculate snow load</button>
+</div>
+<h2>Result</h2>
+<pre id="out">Your snow load will appear here.</pre>
+<p class="small">Ontario snow design starts from Supplementary Standard SB-1: a 1-in-50-year ground snow
+load Ss and a rain load Sr for each municipality. Part 9 turns them into a roof load with
+S = Cb x Ss + Sr (Cb 0.45 for roofs not wider than 4.3 m, otherwise 0.55, never less than 1.0 kPa).
+Part 4 uses S = Is [Ss (Cb Cw Ce Ca) + Sr]; this tool shows the uniform-load case with Cb 0.8 and
+Cw = Ce = Ca = 1.0, before drift and slope adjustments.</p>
+<p class="small">Free tool by <b>Dust 2 Engineering Inc.</b>, Mississauga, Ontario — building permit
+drawings for restaurants and small commercial projects across the GTA, stamped by an Ontario P.Eng.
+Flat rate $3,500–$5,000. Questions or a project to discuss: open an issue in this repository.</p>
+</div>
+<script>
+
+const CITIES = {"Toronto": [0.9, 0.4], "Mississauga": [1.1, 0.4], "Markham": [1.3, 0.4], "Oshawa": [1.4, 0.4], "Newmarket": [2.0, 0.4], "Bradford": [2.1, 0.4], "Caledon": [2.2, 0.4], "Orangeville": [2.3, 0.4], "Orillia": [2.4, 0.4], "Barrie": [2.5, 0.4], "Gravenhurst": [2.7, 0.4], "Parry Sound": [2.8, 0.4], "Huntsville": [2.9, 0.4], "Bracebridge": [3.1, 0.4]};
+function go(){
+  const c = CITIES[document.getElementById('city').value];
+  const w = parseFloat(document.getElementById('width').value) || 0;
+  const isf = parseFloat(document.getElementById('imp').value);
+  const cb9 = w <= 4.3 ? 0.45 : 0.55;
+  const s9 = Math.max(cb9 * c[0] + c[1], 1.0);
+  const s4 = isf * (c[0] * 0.8 + c[1]);
+  let out = 'Ss = ' + c[0] + ' kPa, Sr = ' + c[1] + ' kPa (SB-1)\n';
+  out += 'Part 9 (houses and small buildings): S = ' + cb9 + ' x ' + c[0] + ' + ' + c[1] + ' = ' + s9.toFixed(2) + ' kPa (' + Math.round(s9 * 20.885) + ' psf), minimum 1.0 kPa applied\n';
+  out += 'Part 4 simplified uniform load (Cb 0.8, Cw/Ce/Ca 1.0): S = ' + s4.toFixed(2) + ' kPa (' + Math.round(s4 * 20.885) + ' psf) - before drift accumulation and slope factors\n';
+  out += 'Same roof, different town: snow design roughly doubles from Toronto to cottage country. Confirm the SB-1 values for your exact municipality.';
+  document.getElementById('out').textContent = out;
+}
+
+</script>
+</body>
+</html>
